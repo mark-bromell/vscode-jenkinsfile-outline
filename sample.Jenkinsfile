@@ -10,7 +10,9 @@ pipeline {
 
                 }
                 stage('Downloading') {
-
+                    sh '''
+                        # triple quote test
+                    '''
                 }
             }
         }
@@ -25,7 +27,9 @@ pipeline {
 
                 }
                 container('other-container') {
-
+                    sh """
+                        # triple quote test
+                    """
                 }
             }
         }
