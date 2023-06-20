@@ -4,14 +4,14 @@ pipeline {
     }
     agent none
     stages {
-        stage('Setup') {
+        stage("Setup") {
             parallel {
                 stage('Pre-action') {
 
                 }
                 stage('Downloading') {
                     sh '''
-                        # triple quote test
+                        # triple \"quote test {{}
                     '''
                 }
             }
@@ -28,7 +28,7 @@ pipeline {
                 }
                 container('other-container') {
                     sh """
-                        # triple quote test
+                        # triple quote test }}}
                     """
                 }
             }

@@ -1,5 +1,4 @@
 {
-  "type": "module",
   "name": "jenkins-outline",
   "displayName": "Jenkins Outline",
   "description": "Usable outline with Jenkinsfiles for easy navigation",
