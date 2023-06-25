@@ -114,12 +114,12 @@ function traversePushStages(
     );
 }
 
-function getStageName(line: string): string {
+function getStageName(line: string): string | undefined {
     const reLine = /stage\(.*?\)/;
     const reName = /((?<=\')(.*?)(?=\')|(?<=\")(.*?)(?=\"))/;
     const stageLine = line.match(reLine);
     if (stageLine) {
         return stageLine[0].match(reName)![0];
     }
-    return "None";
+    return;
 }

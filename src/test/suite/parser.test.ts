@@ -2,12 +2,10 @@ import * as assert from 'assert';
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
-import * as vscode from 'vscode';
 import { parseJenkinsFile } from '../../parser';
 import { Stage } from '../../structure';
-// import * as myExtension from '../../extension';
 
-let jenkinsfile = `pipeline {
+const jenkinsfile = `pipeline {
     options {
 
     }
@@ -78,9 +76,7 @@ let jenkinsfile = `pipeline {
     }
 }`;
 
-suite('Extension Test Suite', () => {
-    vscode.window.showInformationMessage('Parser Tests.');
-
+suite('Parser test suite', () => {
     test('Stages count is correct', () => {
         const stages: Array<Stage> = parseJenkinsFile(jenkinsfile);
         assert.strictEqual(stages.length, 4);
