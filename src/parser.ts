@@ -1,26 +1,26 @@
-import { Stage } from "./structure";
+import * as vscode from 'vscode';
 
-export function parseJenkinsFile(fileData: string): Array<Stage> {
-    fileData = cleanEscapedQuotes(fileData);
-    fileData = cleanMatchInQuotes(fileData, /[{}]/g);
+export function parseJenkinsFile(documentText: string): vscode.DocumentSymbol[] {
+    documentText = cleanEscapedQuotes(documentText);
+    documentText = cleanMatchInQuotes(documentText, /[{}]/g);
 
-    let fileLines = fileData.split(/\r?\n/);
-    let stages = lineReader(fileLines);
+    let documentLines = documentText.split(/\r?\n/);
+    let stages = lineReader(documentLines);
     return stages;
 }
 
-function cleanEscapedQuotes(fileData: string) {
+function cleanEscapedQuotes(documentText: string) {
     const re = /(\\\')|(\\\")/g;
-    return fileData.replaceAll(re, "");
+    return documentText.replaceAll(re, "");
 }
 
-function cleanMatchInQuotes(fileData: string, regex: RegExp): string {
+function cleanMatchInQuotes(documentText: string, regex: RegExp): string {
     const reStrings = /("(.*?)")|('(.*?)')/gs;
-    let stringMatches = fileData.match(reStrings);
+    let stringMatches = documentText.match(reStrings);
     let cleanedStrings = [];
 
     if (!stringMatches) {
-        return '';
+        return documentText;
     }
 
     for (const stringMatch of stringMatches) {
@@ -28,21 +28,21 @@ function cleanMatchInQuotes(fileData: string, regex: RegExp): string {
     }
 
     for (let i = 0; i < cleanedStrings.length; i++) {
-        fileData = fileData.replaceAll(stringMatches[i], cleanedStrings[i]);
+        documentText = documentText.replaceAll(stringMatches[i], cleanedStrings[i]);
     }
 
-    return fileData;
+    return documentText;
 }
 
-function lineReader(lines: Array<string>): Array<Stage> {
+function lineReader(documentLines: string[]): vscode.DocumentSymbol[] {
     let depth = 0;
     let previousStageDepth = -1;
-    let stageContext: Array<number> = [];
-    let stages: Array<Stage> = [];
+    let stageContext: number[] = [];
+    let stages: vscode.DocumentSymbol[] = [];
 
     // Going over each line and capturing stage lines.
     // We get the nested depth of each stage line based on braces {}.
-    lines.forEach((line, i) => {
+    documentLines.forEach((line, i) => {
         const openCount = line.split("{").length - 1;
         const closeCount = line.split("}").length - 1;
         depth += openCount - closeCount;
@@ -72,11 +72,22 @@ function lineReader(lines: Array<string>): Array<Stage> {
             stageContext[stageContext.length - 1] += 1;
         }
 
-        let newStage = {
-            name: stageName,
-            lineNumber: i + 1,
-            stages: [],
-        };
+        let lineNumber = i + 1;
+        let range = new vscode.Range(
+            new vscode.Position(lineNumber, 0),
+            new vscode.Position(lineNumber, 0)
+        );
+        let selectionRange = new vscode.Range(
+            new vscode.Position(lineNumber, 0),
+            new vscode.Position(lineNumber, 0)
+        );
+        let newStage: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+            stageName,
+            'Stage',
+            vscode.SymbolKind.Interface,
+            range,
+            selectionRange
+        );
 
         traversePushStages(stages, newStage, stageContext);
         previousStageDepth = depth;
@@ -86,9 +97,9 @@ function lineReader(lines: Array<string>): Array<Stage> {
 }
 
 function traversePushStages(
-    stages: Array<Stage>,
-    newStage: Stage,
-    stageContext: Array<number>,
+    stages: vscode.DocumentSymbol[],
+    newStage: vscode.DocumentSymbol,
+    stageContext: number[],
     depth: number = 0
 ) {
     // These are the top level stages which is just an array, just push.
@@ -101,13 +112,13 @@ function traversePushStages(
     // Only push to the stages field once we have reached the current stage
     // based on its depth within the context.
     if (depth === stageContext.length - 2) {
-        stages[stageContext[depth]].stages.push(newStage);
+        stages[stageContext[depth]].children.push(newStage);
         return;
     }
 
     // We haven't reached the contexts current depth yet, recurse through the stages.
     traversePushStages(
-        stages[stageContext[depth]].stages,
+        stages[stageContext[depth]].children,
         newStage,
         stageContext,
         depth + 1

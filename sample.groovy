@@ -7,7 +7,14 @@ pipeline {
         stage("Setup") {
             parallel {
                 stage('Pre-action') {
+                    stages {
+                        stage('One') {
 
+                        }
+                        stage('Two') {
+
+                        }
+                    }
                 }
                 stage('Downloading') {
                     sh '''

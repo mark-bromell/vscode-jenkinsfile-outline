@@ -1,9 +1,18 @@
 import * as assert from 'assert';
+import * as vscode from 'vscode';
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import { parseJenkinsFile } from '../../parser';
-import { Stage } from '../../structure';
+
+const simpleJenkinsfile = `
+pipeline {
+    options {
+
+    }
+    agent none
+}
+`;
 
 const jenkinsfile = `pipeline {
     options {
@@ -14,7 +23,14 @@ const jenkinsfile = `pipeline {
         stage("Setup") {
             parallel {
                 stage('Pre-action') {
+                    stages {
+                        stage('One') {
 
+                        }
+                        stage('Two') {
+
+                        }
+                    }
                 }
                 stage('Downloading') {
                     sh '''
@@ -77,25 +93,33 @@ const jenkinsfile = `pipeline {
 }`;
 
 suite('Parser test suite', () => {
+    test('Empty pipeline returns emtpy list of stages', () => {
+        const stages: vscode.DocumentSymbol[] = parseJenkinsFile(simpleJenkinsfile);
+        assert.strictEqual(stages.length, 0);
+    });
+
     test('Stages count is correct', () => {
-        const stages: Array<Stage> = parseJenkinsFile(jenkinsfile);
+        const stages: vscode.DocumentSymbol[] = parseJenkinsFile(jenkinsfile);
         assert.strictEqual(stages.length, 4);
-        assert.strictEqual(stages[0].stages.length, 2);
-        assert.strictEqual(stages[2].stages.length, 2);
+        assert.strictEqual(stages[0].children.length, 2);
+        assert.strictEqual(stages[0].children[0].children.length, 2);
+        assert.strictEqual(stages[2].children.length, 2);
     });
 
     test('Stages are parsed correctly', () => {
-        const stages: Array<Stage> = parseJenkinsFile(jenkinsfile);
+        const stages: vscode.DocumentSymbol[] = parseJenkinsFile(jenkinsfile);
         assert.strictEqual(stages.length, 4);
         assert.strictEqual(stages[0].name, 'Setup');
-        assert.strictEqual(stages[0].stages[0].name, 'Pre-action');
-        assert.strictEqual(stages[0].stages[1].name, 'Downloading');
+        assert.strictEqual(stages[0].children[0].name, 'Pre-action');
+        assert.strictEqual(stages[0].children[0].children[0].name, 'One');
+        assert.strictEqual(stages[0].children[0].children[1].name, 'Two');
+        assert.strictEqual(stages[0].children[1].name, 'Downloading');
 
         assert.strictEqual(stages[1].name, 'Static Scan');
 
         assert.strictEqual(stages[2].name, 'Build and Test');
-        assert.strictEqual(stages[2].stages[0].name, 'Build');
-        assert.strictEqual(stages[2].stages[1].name, 'Test');
+        assert.strictEqual(stages[2].children[0].name, 'Build');
+        assert.strictEqual(stages[2].children[1].name, 'Test');
 
         assert.strictEqual(stages[3].name, 'Report');
     });
