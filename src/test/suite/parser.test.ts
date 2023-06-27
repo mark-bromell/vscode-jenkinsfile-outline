@@ -14,7 +14,10 @@ pipeline {
 }
 `;
 
-const jenkinsfile = `pipeline {
+const jenkinsfile = `
+
+
+pipeline {
     options {
 
     }
@@ -34,7 +37,7 @@ const jenkinsfile = `pipeline {
                 }
                 stage('Downloading') {
                     sh '''
-                        # triple \\"quote test {{}
+                        # triple \"quote test {{}
                     '''
                 }
             }
@@ -90,7 +93,8 @@ const jenkinsfile = `pipeline {
             }
         }
     }
-}`;
+}
+`;
 
 suite('Parser test suite', () => {
     test('Empty pipeline returns emtpy list of stages', () => {

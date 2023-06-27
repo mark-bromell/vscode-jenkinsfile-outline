@@ -83,7 +83,7 @@ function lineReader(documentLines: string[]): vscode.DocumentSymbol[] {
         );
         let newStage: vscode.DocumentSymbol = new vscode.DocumentSymbol(
             stageName,
-            'Stage',
+            '',
             vscode.SymbolKind.Interface,
             range,
             selectionRange

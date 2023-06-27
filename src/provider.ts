@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { parseJenkinsFile } from './parser';
 
-export default class JenkinsDocumentSymbolProvider implements vscode.DocumentSymbolProvider {
+export class JenkinsDocumentSymbolProvider implements vscode.DocumentSymbolProvider {
     public provideDocumentSymbols(
         document: vscode.TextDocument,
         token: vscode.CancellationToken

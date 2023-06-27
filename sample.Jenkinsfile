@@ -1,3 +1,11 @@
+// This is a comment with stage("Test 1") {}
+/*
+    And a multiline comment
+    stage("Test 2") {
+
+    }
+*/
+
 pipeline {
     options {
 
