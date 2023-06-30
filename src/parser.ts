@@ -1,6 +1,7 @@
+import Tokenizr from 'tokenizr';
 import * as vscode from 'vscode';
 
-export function parseJenkinsFile(documentText: string): vscode.DocumentSymbol[] {
+export function parseJenkinsfile(documentText: string): vscode.DocumentSymbol[] {
     documentText = cleanEscapedQuotes(documentText);
     documentText = cleanMatchInQuotes(documentText, /[{}]/g);
 
@@ -17,7 +18,7 @@ function cleanEscapedQuotes(documentText: string) {
 function cleanMatchInQuotes(documentText: string, regex: RegExp): string {
     const reStrings = /("(.*?)")|('(.*?)')/gs;
     let stringMatches = documentText.match(reStrings);
-    let cleanedStrings = [];
+    let cleanedStrings: string[] = [];
 
     if (!stringMatches) {
         return documentText;
