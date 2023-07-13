@@ -7,7 +7,7 @@
 			"ES2021.String"
 		],
 		"strict": true,
-		"sourceMap": true,
+		"inlineSourceMap": true,
 		"rootDir": "src",
 		"noImplicitAny": false,
 		"esModuleInterop": true,

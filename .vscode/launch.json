@@ -19,6 +19,7 @@
             "request": "launch",
             "preLaunchTask": "npm: pretest",
             "runtimeExecutable": "${execPath}",
+            "cwd" : "${workspaceFolder}/${relativeFileDirname}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
