@@ -1,26 +1,23 @@
 {
-  "name": "jenkins-outline",
-  "displayName": "Jenkins Outline",
+  "name": "jenkinsfile-outline",
+  "displayName": "Jenkinsfile Outline",
   "description": "Usable outline with Jenkinsfiles for easy navigation",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mark-bromell/vscode-jenkinsfile-outline"
+  },
   "engines": {
     "vscode": "^1.78.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages",
+    "Visualization"
   ],
   "activationEvents": [
     "onLanguage:groovy"
   ],
   "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "jenkins-outline.helloWorld",
-        "title": "Hello World"
-      }
-    ]
-  },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
