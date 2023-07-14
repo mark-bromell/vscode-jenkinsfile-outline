@@ -1,3 +1,13 @@
+export const jenkinsfileSimple = `
+pipeline {
+    options {
+
+    }
+    agent none
+}
+`;
+
+export const jenkinsfileFull = `
 // This is a comment with stage("Test 1") {}
 /*
     And a multiline comment
@@ -7,7 +17,7 @@
 */
 
 pipeline {
-    options {
+    options { // inline comment after code
 
     }
     agent none
@@ -26,7 +36,7 @@ pipeline {
                 }
                 stage('Downloading') {
                     sh '''
-                        # triple \"quote test {{}
+                        # triple \'quote test {{}
                     '''
                 }
             }
@@ -34,7 +44,7 @@ pipeline {
         stage('Static Scan') {
             when { 
                 beforeAgent true
-                expression { true }
+                expression {true}
             }
             agent { label 'my-agent' }
             steps {
@@ -43,7 +53,7 @@ pipeline {
                 }
                 container('other-container') {
                     sh """
-                        # triple quote test }}}
+                        # triple \"quote test }}}
                     """
                 }
             }
@@ -64,12 +74,12 @@ pipeline {
                 stages {
                     stage('Build') {
                         steps {
-                            echo "Do Build for ${PLATFORM} - ${BROWSER}"
+                            echo "Do Build for \${PLATFORM} - \${BROWSER}"
                         }
                     }
                     stage('Test') {
                         steps {
-                            echo "Do Test for ${PLATFORM} - ${BROWSER}"
+                            echo "Do Test for \${PLATFORM} - \${BROWSER}"
                         }
                     }
                 }
@@ -83,3 +93,4 @@ pipeline {
         }
     }
 }
+`;

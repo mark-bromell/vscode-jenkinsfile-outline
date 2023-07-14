@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { parseJenkinsFile } from './parser';
+import parseJenkinsfile from './parser';
 
 export class JenkinsDocumentSymbolProvider implements vscode.DocumentSymbolProvider {
     public provideDocumentSymbols(
@@ -7,7 +7,7 @@ export class JenkinsDocumentSymbolProvider implements vscode.DocumentSymbolProvi
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.DocumentSymbol[]> {
         return new Promise((resolve, reject) => {
-            let symbols: vscode.DocumentSymbol[] = parseJenkinsFile(document.getText());
+            let symbols: vscode.DocumentSymbol[] = parseJenkinsfile(document.getText());
             resolve(symbols);
         });
     }

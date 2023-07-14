@@ -1,136 +1,192 @@
 import * as vscode from 'vscode';
+import Tokenizr, { Token } from 'tokenizr';
+import { tokenizeJenkinsfile } from './tokenizer';
 
-export function parseJenkinsFile(documentText: string): vscode.DocumentSymbol[] {
-    documentText = cleanEscapedQuotes(documentText);
-    documentText = cleanMatchInQuotes(documentText, /[{}]/g);
+export default function parseJenkinsfile(documentText: string): vscode.DocumentSymbol[] {
+    const lexer: Tokenizr = tokenizeJenkinsfile(documentText);
+    const context: ParserContext = new ParserContext();
+    const rules: ParseRuleFunction[] = [
+        parseRuleDepthIncrease,
+        parseRuleDepthDecrease,
+        parseRulePipeline,
+        parseRuleStage,
+    ];
 
-    let documentLines = documentText.split(/\r?\n/);
-    let stages = lineReader(documentLines);
-    return stages;
-}
+    const tokens = lexer.tokens();
 
-function cleanEscapedQuotes(documentText: string) {
-    const re = /(\\\')|(\\\")/g;
-    return documentText.replaceAll(re, "");
-}
-
-function cleanMatchInQuotes(documentText: string, regex: RegExp): string {
-    const reStrings = /("(.*?)")|('(.*?)')/gs;
-    let stringMatches = documentText.match(reStrings);
-    let cleanedStrings = [];
-
-    if (!stringMatches) {
-        return documentText;
+    for (let i = 0; i < tokens.length; i++) {
+        for (let j = 0; j < rules.length; j++) {
+            if (parseRule(i, tokens, context, rules[j])) {
+                break;
+            }
+        }
     }
 
-    for (const stringMatch of stringMatches) {
-        cleanedStrings.push(stringMatch.replaceAll(regex, ""));
-    }
-
-    for (let i = 0; i < cleanedStrings.length; i++) {
-        documentText = documentText.replaceAll(stringMatches[i], cleanedStrings[i]);
-    }
-
-    return documentText;
+    return context.symbols;
 }
 
-function lineReader(documentLines: string[]): vscode.DocumentSymbol[] {
-    let depth = 0;
-    let previousStageDepth = -1;
-    let stageContext: number[] = [];
-    let stages: vscode.DocumentSymbol[] = [];
+type ParseRuleFunction = {
+    (index: number, tokens: Token[], context: ParserContext): boolean;
+};
 
-    // Going over each line and capturing stage lines.
-    // We get the nested depth of each stage line based on braces {}.
-    documentLines.forEach((line, i) => {
-        const openCount = line.split("{").length - 1;
-        const closeCount = line.split("}").length - 1;
-        depth += openCount - closeCount;
+function parseRule(
+    index: number,
+    tokens: Token[],
+    context: ParserContext,
+    fn: ParseRuleFunction,
+): boolean {
+    let result: boolean;
 
-        const stageName = getStageName(line);
-        if (!stageName) {
+    try {
+        result = fn(index, tokens, context);
+    } catch (error) {
+        console.error(error);
+        result = false;
+    }
+
+    return result;
+}
+
+function parseRuleDepthIncrease(index: number, tokens: Token[], context: ParserContext): boolean {
+    if (!(tokens[index].type === 'char' && tokens[index].value === '{')) {
+        return false;
+    }
+
+    context.pushDepth();
+    return true;
+}
+
+function parseRuleDepthDecrease(index: number, tokens: Token[], context: ParserContext): boolean {
+    if (!(tokens[index].type === 'char' && tokens[index].value === '}')) {
+        return false;
+    }
+
+    context.popDepth();
+    return true;
+}
+
+function parseRulePipeline(index: number, tokens: Token[], context: ParserContext): boolean {
+    if (!(tokens[index].type === 'word' && tokens[index].value === 'pipeline')) {
+        return false;
+    }
+
+    let range = new vscode.Range(
+        new vscode.Position(tokens[index].line, tokens[index].pos),
+        new vscode.Position(tokens[index].line, tokens[index].pos + tokens[index].value.length)
+    );
+    let selectionRange = new vscode.Range(
+        new vscode.Position(tokens[index].line, tokens[index].pos),
+        new vscode.Position(tokens[index].line, tokens[index].pos + tokens[index].value.length)
+    );
+    let newSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        'Pipeline',
+        '',
+        vscode.SymbolKind.Interface,
+        range,
+        selectionRange
+    );
+
+    context.pushBlock(newSymbol);
+    return true;
+}
+
+function parseRuleStage(index: number, tokens: Token[], context: ParserContext): boolean {
+    if (!(tokens[index].type === 'word' && tokens[index].value === 'stage')) {
+        return false;
+    }
+
+    const stageName = tokens[index + 2].value;
+
+    let range = new vscode.Range(
+        new vscode.Position(tokens[index].line, tokens[index].pos),
+        new vscode.Position(tokens[index].line, tokens[index].pos + tokens[index].value.length)
+    );
+    let selectionRange = new vscode.Range(
+        new vscode.Position(tokens[index].line, tokens[index].pos),
+        new vscode.Position(tokens[index].line, tokens[index].pos + tokens[index].value.length)
+    );
+    let newSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+        stageName,
+        'stage',
+        vscode.SymbolKind.Event,
+        range,
+        selectionRange
+    );
+
+    context.pushBlock(newSymbol);
+    return true;
+}
+
+class SymbolDepth {
+    index: number;
+    depth: number;
+
+    constructor(index: number, depth: number) {
+        this.index = index;
+        this.depth = depth;
+    }
+}
+
+class ParserContext {
+    symbols: vscode.DocumentSymbol[];
+    symbolDepth: SymbolDepth[];
+    depthCount: number = 0;
+
+    constructor() {
+        this.symbols = [];
+        this.symbolDepth = [];
+    }
+
+    get currentSymbol(): vscode.DocumentSymbol | undefined {
+        if (this.symbolDepth.length === 0) {
+            return undefined;
+        }
+
+        let symbol = this.symbols[this.symbolDepth[0].index];
+        for (let i = 1; i < this.symbolDepth.length; i++) {
+            symbol = symbol.children[this.symbolDepth[i].index];
+        }
+        return symbol;
+    }
+
+    push(symbol: vscode.DocumentSymbol) {
+        if (this.currentSymbol) {
+            this.currentSymbol.children.push(symbol);
+        } else {
+            this.symbols.push(symbol);
+        }
+    }
+
+    pushBlock(symbol: vscode.DocumentSymbol) {
+        this.push(symbol);
+        this.pushSymbolDepth();
+    }
+
+    pushDepth() {
+        this.depthCount++;
+    }
+
+    popDepth() {
+        this.depthCount--;
+
+        if (!this.symbolDepth.at(-1)) {
             return;
         }
 
-        // Based on the previousStageDepth we want to update the current stageContext
-        // so that we can know where to push any new stages.
-        // The stageContext will track the current stage index that we are in, to
-        // an undifed depth, which is why we recurse with traversePushStages.
-        if (depth > previousStageDepth) {
-            // We have went into a nested stage within the previous stage,
-            // Increasing the stage context's depth since no stage exists here yet.
-            stageContext.push(0);
-        } else if (depth === previousStageDepth) {
-            // At the same depth as the previous stage so the current stage context
-            // increments by 1 and doesn't increase depth.
-            stageContext[stageContext.length - 1] += 1;
-        } else {
-            // We have exited a nested stage so our context depth pops up by 1
-            // and we have to increment the new context since we are continuing in the
-            // existing context.
-            stageContext.pop();
-            stageContext[stageContext.length - 1] += 1;
+        if (this.depthCount === this.symbolDepth.at(-1)!.depth) {
+            this.symbolDepth.pop();
+        }
+    }
+
+    pushSymbolDepth() {
+        if (!this.symbols) {
+            return;
         }
 
-        let lineNumber = i + 1;
-        let range = new vscode.Range(
-            new vscode.Position(lineNumber, 0),
-            new vscode.Position(lineNumber, 0)
-        );
-        let selectionRange = new vscode.Range(
-            new vscode.Position(lineNumber, 0),
-            new vscode.Position(lineNumber, 0)
-        );
-        let newStage: vscode.DocumentSymbol = new vscode.DocumentSymbol(
-            stageName,
-            '',
-            vscode.SymbolKind.Interface,
-            range,
-            selectionRange
-        );
-
-        traversePushStages(stages, newStage, stageContext);
-        previousStageDepth = depth;
-    });
-
-    return stages;
-}
-
-function traversePushStages(
-    stages: vscode.DocumentSymbol[],
-    newStage: vscode.DocumentSymbol,
-    stageContext: number[],
-    depth: number = 0
-) {
-    // These are the top level stages which is just an array, just push.
-    if (stageContext.length === 1) {
-        stages.push(newStage);
-        return;
+        if (this.currentSymbol) {
+            this.symbolDepth.push(new SymbolDepth(this.currentSymbol.children.length - 1, this.depthCount));
+        } else {
+            this.symbolDepth.push(new SymbolDepth(this.symbols.length - 1, this.depthCount));
+        }
     }
-
-    // We are within a stage object so we must push to its stages field.
-    // Only push to the stages field once we have reached the current stage
-    // based on its depth within the context.
-    if (depth === stageContext.length - 2) {
-        stages[stageContext[depth]].children.push(newStage);
-        return;
-    }
-
-    // We haven't reached the contexts current depth yet, recurse through the stages.
-    traversePushStages(
-        stages[stageContext[depth]].children,
-        newStage,
-        stageContext,
-        depth + 1
-    );
-}
-
-function getStageName(line: string): string | undefined {
-    const reLine = /stage\(.*?\)/;
-    const reName = /((?<=\')(.*?)(?=\')|(?<=\")(.*?)(?=\"))/;
-    const stageLine = line.match(reLine);
-    if (stageLine) {
-        return stageLine[0].match(reName)![0];
-    }
-    return;
 }
