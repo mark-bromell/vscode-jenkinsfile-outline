@@ -4,7 +4,7 @@
   "description": "Usable outline with Jenkinsfiles for easy navigation",
   "icon": "images/logo.png",
   "publisher": "markbromell",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/mark-bromell/vscode-jenkinsfile-outline"
