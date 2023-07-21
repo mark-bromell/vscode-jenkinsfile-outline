@@ -70,20 +70,12 @@ function parseRulePipeline(index: number, tokens: Token[], context: ParserContex
         return false;
     }
 
-    let range = new vscode.Range(
-        new vscode.Position(tokens[index].line, tokens[index].pos),
-        new vscode.Position(tokens[index].line, tokens[index].pos + tokens[index].value.length)
-    );
-    let selectionRange = new vscode.Range(
-        new vscode.Position(tokens[index].line, tokens[index].pos),
-        new vscode.Position(tokens[index].line, tokens[index].pos + tokens[index].value.length)
-    );
     let newSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
         'Pipeline',
         '',
         vscode.SymbolKind.Interface,
-        range,
-        selectionRange
+        getRange(index, tokens),
+        getRange(index, tokens)
     );
 
     context.pushBlock(newSymbol);
@@ -97,24 +89,23 @@ function parseRuleStage(index: number, tokens: Token[], context: ParserContext):
 
     const stageName = tokens[index + 2].value;
 
-    let range = new vscode.Range(
-        new vscode.Position(tokens[index].line, tokens[index].pos),
-        new vscode.Position(tokens[index].line, tokens[index].pos + tokens[index].value.length)
-    );
-    let selectionRange = new vscode.Range(
-        new vscode.Position(tokens[index].line, tokens[index].pos),
-        new vscode.Position(tokens[index].line, tokens[index].pos + tokens[index].value.length)
-    );
     let newSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
         stageName,
         'stage',
-        vscode.SymbolKind.Event,
-        range,
-        selectionRange
+        vscode.SymbolKind.Function,
+        getRange(index, tokens),
+        getRange(index, tokens)
     );
 
     context.pushBlock(newSymbol);
     return true;
+}
+
+function getRange(index: number, tokens: Token[]): vscode.Range {
+    return new vscode.Range(
+        new vscode.Position(tokens[index].line - 1, tokens[index].pos),
+        new vscode.Position(tokens[index].line - 1, tokens[index].pos + tokens[index].value.length)
+    );
 }
 
 class SymbolDepth {
