@@ -28,6 +28,9 @@ jobs:
     - run: npm test
       if: runner.os != 'Linux'
 
+    - name: Pre-publish validation
+      run: npm run vscode:prepublish
+
     - name: Publish
       if: success() && startsWith(github.ref, 'refs/tags/') && matrix.os == 'ubuntu-latest'
       run: npm run deploy
